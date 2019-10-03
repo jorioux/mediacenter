@@ -1,0 +1,146 @@
+version: "3.7"
+
+services:
+  traefik:
+    image: traefik:2.0
+    container_name: "traefik"
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+      - "8080:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - web
+    environment:
+      - CF_API_EMAIL=${CF_API_EMAIL}
+      - CF_API_KEY=${CF_API_KEY}
+      - TRAEFIK_API_INSECURE=true
+      - TRAEFIK_PROVIDERS_DOCKER=true
+      - TRAEFIK_PROVIDERS_DOCKER_NETWORK=web
+      - TRAEFIK_PROVIDERS_DOCKER_USEBINDPORTIP=true
+      - TRAEFIK_ENTRYPOINTS_HTTP=true
+      - TRAEFIK_ENTRYPOINTS_HTTP_ADDRESS=:80
+      - TRAEFIK_ENTRYPOINTS_HTTPS=true
+      - TRAEFIK_ENTRYPOINTS_HTTPS_ADDRESS=:443
+      - TRAEFIK_CERTIFICATESRESOLVERS_CLOUDFLARE=true
+      - TRAEFIK_CERTIFICATESRESOLVERS_CLOUDFLARE_ACME_DNSCHALLENGE=true
+      - TRAEFIK_CERTIFICATESRESOLVERS_CLOUDFLARE_ACME_EMAIL=${ACME_EMAIL}
+      - TRAEFIK_CERTIFICATESRESOLVERS_CLOUDFLARE_ACME_DNSCHALLENGE_PROVIDER=cloudflare
+
+  jackett:
+    image: linuxserver/jackett
+    container_name: jackett
+    restart: unless-stopped
+    networks:
+      - web
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=US
+    volumes:
+      - /mnt/data/jackett:/config
+      - /mnt/data/medias:/downloads/medias
+    labels:
+      - traefik.http.services.jackett.loadbalancer.server.port=9117
+      - traefik.http.routers.jackett.entrypoints=https
+      - traefik.http.routers.jackett.rule=Host(`jackett.${DOMAIN_NAME}`)
+      - traefik.http.routers.jackett.tls.certresolver=cloudflare
+
+  radarr:
+    image: linuxserver/radarr
+    container_name: radarr
+    restart: unless-stopped
+    networks:
+      - web
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=US
+    volumes:
+      - /mnt/data/radarr:/config
+      - /mnt/data/medias/movies:/movies
+      - /mnt/data/downloads:/downloads
+    labels:
+      - traefik.http.services.radarr.loadbalancer.server.port=7878
+      - traefik.http.routers.radarr.entrypoints=https
+      - traefik.http.routers.radarr.rule=Host(`radarr.${DOMAIN_NAME}`)
+      - traefik.http.routers.radarr.tls.certresolver=cloudflare
+      
+  sonarr:
+    image: linuxserver/sonarr:preview
+    container_name: sonarr
+    restart: unless-stopped
+    networks:
+      - web
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=US
+    volumes:
+      - /mnt/data/sonarr:/config
+      - /mnt/data/medias/series:/tv
+      - /mnt/data/downloads:/downloads
+    labels:
+      - traefik.http.services.sonarr.loadbalancer.server.port=8989
+      - traefik.http.routers.sonarr.entrypoints=https
+      - traefik.http.routers.sonarr.rule=Host(`sonarr.${DOMAIN_NAME}`)
+      - traefik.http.routers.sonarr.tls.certresolver=cloudflare
+
+  deluge:
+    image: linuxserver/deluge
+    container_name: deluge
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=US
+    volumes:
+      - delugeconfig:/config
+      - /mnt/data/downloads:/downloads
+      - /mnt/data/medias:/medias
+    ports:
+      - 58946:58946
+    restart: unless-stopped
+    networks:
+      - web
+    labels:
+      - traefik.http.services.deluge.loadbalancer.server.port=8112
+      - traefik.http.routers.deluge.entrypoints=https
+      - traefik.http.routers.deluge.rule=Host(`deluge.${DOMAIN_NAME}`)
+      - traefik.http.routers.deluge.tls.certresolver=cloudflare
+
+  plex:
+    image: plexinc/pms-docker:latest
+    container_name: plex
+    environment:
+      - TZ=US
+      - PLEX_CLAIM=${PLEX_CLAIM}
+    volumes:
+      - /mnt/data/plex/config:/config
+      - /mnt/data/medias:/data
+      - /mnt/data/transcode:/transcode
+    restart: unless-stopped
+    networks:
+      - web
+    ports:
+      - 32400:32400/tcp
+      - 3005:3005/tcp
+      - 8324:8324/tcp
+      - 32469:32469/tcp
+      - 1900:1900/udp
+      - 32410:32410/udp
+      - 32412:32412/udp
+      - 32413:32413/udp
+      - 32414:32414/udp
+    labels:
+      - traefik.http.services.plex.loadbalancer.server.port=32400
+      - traefik.http.routers.plex.entrypoints=https
+      - traefik.http.routers.plex.rule=Host(`plex.${DOMAIN_NAME}`)
+      - traefik.http.routers.plex.tls.certresolver=cloudflare
+
+volumes:
+  delugeconfig:
+
+networks:
+  web:
