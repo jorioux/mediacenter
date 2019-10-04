@@ -38,7 +38,7 @@ services:
     environment:
       - PUID=1000
       - PGID=1000
-      - TZ=US
+      - TZ=America/Montreal
     volumes:
       - /mnt/data/jackett:/config
       - /mnt/data/medias:/downloads/medias
@@ -57,7 +57,7 @@ services:
     environment:
       - PUID=1000
       - PGID=1000
-      - TZ=US
+      - TZ=America/Montreal
     volumes:
       - /mnt/data/radarr:/config
       - /mnt/data/medias/movies:/movies
@@ -77,7 +77,7 @@ services:
     environment:
       - PUID=1000
       - PGID=1000
-      - TZ=US
+      - TZ=America/Montreal
     volumes:
       - /mnt/data/sonarr:/config
       - /mnt/data/medias/series:/tv
@@ -94,7 +94,7 @@ services:
     environment:
       - PUID=1000
       - PGID=1000
-      - TZ=US
+      - TZ=America/Montreal
     volumes:
       - delugeconfig:/config
       - /mnt/data/downloads:/downloads
@@ -114,12 +114,12 @@ services:
     image: plexinc/pms-docker:latest
     container_name: plex
     environment:
-      - TZ=US
+      - TZ=America/Montreal
       - PLEX_CLAIM=${PLEX_CLAIM}
     volumes:
-      - /mnt/data/plex/config:/config
+      - plexconfig:/config
+      - plextranscode:/transcode
       - /mnt/data/medias:/data
-      - /mnt/data/transcode:/transcode
     restart: unless-stopped
     networks:
       - web
@@ -141,6 +141,10 @@ services:
 
 volumes:
   delugeconfig:
+    external: true
+  plexconfig:
+    external: true
+  plextranscode:
 
 networks:
   web:

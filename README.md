@@ -18,5 +18,9 @@ You can backup the config folders once in a while.
 #### 2. Create the dotenv file
 Copy `.env.example` to `.env` and fill the variables.
 
+#### 3. Create the persistent volumes
+`docker volume create plexconfig`
+`docker volume create delugeconfig`
+
 #### 3. Launch it
 `docker-compose up -d`
