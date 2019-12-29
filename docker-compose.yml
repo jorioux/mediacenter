@@ -139,6 +139,20 @@ services:
       - traefik.http.routers.plex.rule=Host(`plex.${DOMAIN_NAME}`)
       - traefik.http.routers.plex.tls.certresolver=cloudflare
 
+  tautulli:
+    image: linuxserver/tautulli
+    container_name: tautulli
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=America/Montreal
+    volumes:
+      - /mnt/data/tautulli:/config
+      - plexconfig:/plexconfig:ro
+    ports:
+      - 8181:8181
+    restart: unless-stopped
+
 volumes:
   delugeconfig:
     external: true
